@@ -1,7 +1,68 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
+
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv('DataWithAllTimes.csv')
+df['t_pseudo'] = pd.to_numeric(df['t_pseudo'],errors = 'coerce')
+
+Temperature = df.iloc[:,1].values
+LSR = df.iloc[:,2].values
+CA = df.iloc[:,3].values
+Size = df.iloc[:,4].values
+IsoTime = df.iloc[:,5].values
+HeatingTime = df.iloc[:, 6].values
+t_rxn = df.iloc[:,8].values
+t_pseudo = df.iloc[:,11].values
+F_X = df.iloc[:,12].values
+Yield = df.iloc[:,20].values
+t_total = np.zeros_like(t_rxn)
+
+for i in range(len(IsoTime)):
+    t_total[i] = t_rxn[i] + t_pseudo[i]
+    
+Size = Size.reshape((Size.shape[0], 1))
+LSR = LSR.reshape((LSR.shape[0], 1))
+CA = CA.reshape((CA.shape[0], 1))
+F_X = F_X.reshape((F_X.shape[0],1))
+Temp = Temperature.reshape((Temperature.shape[0], 1))
+t_total = t_total.reshape((IsoTime.shape[0], 1))
+X = np.concatenate((Size, LSR, CA, F_X, Temp, t_total), axis=1) 
+Y = Yield
+print("Array type: ", X.dtype)
+
+train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.2, random_state=1)
+print("Train X type: ", train_X.dtype)
+print("Train Y type: ", train_Y.dtype)
+
+
+Time_meas = train_X[:,5]
+Time_test = test_X[:,5]
+Tem_meas = train_X[:,4]
+Tem_test = test_X[:,4]
+Yield_meas = train_Y
+Yield_test = test_Y
+Fx_meas = train_X[:,3]
+Fx_test = test_X[:,3]
+CA_meas = train_X[:,2]
+CA_test = test_X[:,2]
+X0_meas = np.zeros_like(CA_meas)
+X0_test = np.zeros_like(CA_test)
+LSR_meas = train_X[:,1]
+LSR_test = test_X[:,1]
+CAweight_meas = np.zeros_like(CA_meas)
+CAweight_test = np.zeros_like(CA_test)
+
+R = 8.314
+rho_w = 1000
+
+
+# In[2]:
 
 
 from pyomo.environ import *
@@ -113,8 +174,8 @@ for s in Sample:
         
 #Initial Values
 for s in Sample:
-    model.constraints.add(model.Hf[s,0] == model.alpha*(Fx_meas[s]*rho_w/(100*(LSR_meas[s]))))        ###double check the formulation
-    model.constraints.add(model.Hs[s,0] == (1-model.alpha)*(Fx_meas[s]*rho_w/(100*(LSR_meas[s]))))
+    model.constraints.add(model.Hf[s,0] == model.alpha*(Fx_meas[s]*rho_w/(100*(LSR_meas[s]+1))))        ###double check the formulation
+    model.constraints.add(model.Hs[s,0] == (1-model.alpha)*(Fx_meas[s]*rho_w/(100*(LSR_meas[s]+1))))
     model.constraints.add(model.X[s,0] == X0_meas[s])
     model.constraints.add(model.O[s,0] == X0_meas[s])
 
@@ -203,33 +264,33 @@ plt.plot(Timepts, Ovalues, linestyle=':', label ='Intermediate Oligomers')
 plt.legend()
 plt.show()
 
-print("Time points: ", Timepts)
+# print("Time points: ", Timepts)
 
-print("Hf:  ")
-for t in Time:
-    print(model.Hf[6,t].value)
+# print("Hf:  ")
+# for t in Time:
+#     print(model.Hf[6,t].value)
     
-print("Hs:  ")
-for t in Time:
-    print(model.Hs[6,t].value)
+# print("Hs:  ")
+# for t in Time:
+#     print(model.Hs[6,t].value)
 
-print("O:  ")
-for t in Time:
-    print(model.O[6,t].value)
+# print("O:  ")
+# for t in Time:
+#     print(model.O[6,t].value)
     
-print("X:  ")
-for t in Time:
-    print(model.X[6,t].value)
+# print("X:  ")
+# for t in Time:
+#     print(model.X[6,t].value)
 
 Yield_Calc = np.zeros_like(Time_meas)
 print("Predicted Yield:")
 # print solutions
 for s in Sample:
-    print(model.yield_cal[s].value)
+#     print(model.yield_cal[s].value)
     Yield_Calc[s] = model.yield_cal[s].value
 
 MAE_train = metrics.mean_absolute_error(Yield_meas,Yield_Calc)
-print("MAE_train: ", MAE_train)
+# print("MAE_train: ", MAE_train)
 
 
 
@@ -268,8 +329,8 @@ for s in Sample_test:
         
 #Initial Values for Test Set                                                                                                                                                                          
 for s in Sample_test:
-    model_test.constraints.add(model_test.Hf_test[s,0] == bestalpha*(Fx_test[s]*rho_w/(100*(LSR_test[s]))))
-    model_test.constraints.add(model_test.Hs_test[s,0] == (1-bestalpha)*(Fx_test[s]*rho_w/(100*(LSR_test[s]))))
+    model_test.constraints.add(model_test.Hf_test[s,0] == bestalpha*(Fx_test[s]*rho_w/(100*(LSR_test[s]+1))))
+    model_test.constraints.add(model_test.Hs_test[s,0] == (1-bestalpha)*(Fx_test[s]*rho_w/(100*(LSR_test[s]+1))))
     model_test.constraints.add(model_test.X_test[s,0] == X0_test[s])
     model_test.constraints.add(model_test.O_test[s,0] == X0_test[s])
 
@@ -286,5 +347,12 @@ Yield_CalcTest = np.zeros_like(Time_test)
 for s in Sample_test:
     Yield_CalcTest[s] = model_test.yield_cal_test[s].value
 MAE_test = metrics.mean_absolute_error(Yield_test,Yield_CalcTest)
+print("MAE_train: ", MAE_train)
 print("MAE_test: ", MAE_test)
+
+
+# In[ ]:
+
+
+
 
