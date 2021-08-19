@@ -23,7 +23,7 @@ module load cuda cudnn
 source ./venv/bin/activate
 
 
-python ./Method1ScipyInt.py
+python ./Scipy 1-step.py
 
 
 
