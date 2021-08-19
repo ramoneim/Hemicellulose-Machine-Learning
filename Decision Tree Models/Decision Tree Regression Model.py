@@ -45,7 +45,7 @@ Y = Y.tolist()
 #YIELD_train = y_train
 #X_train, X_test, y_train, y_test = train_test_split(X_all, Y, test_size=0.2, random_state=1)
 
-
+# Creating X array
 Temp_train = X_all['Temp'].tolist()
 LSR_train = X_all['LSR'].tolist()
 CA_train = X_all['CA'].tolist()
@@ -79,22 +79,27 @@ for i in range(len(X)):
     X[i,9]=LSR_train[i]
     
 
+# Splitting training and testing datasets
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
 
+# Creating regressor model 
 regressor = DecisionTreeRegressor(max_depth=5, min_samples_leaf=10)
 regressor.fit(X_train,y_train)
 
+# Finding yield from training and testing datasets
 ytrain_pred = regressor.predict(X_train)
 ytest_pred = regressor.predict(X_test)
 
+# Calculating MAE for training and testing datasets
 MAE_train = metrics.mean_absolute_error(y_train, ytrain_pred) 
 MAE_test = metrics.mean_absolute_error(y_test, ytest_pred) 
 
 print('MAE train: ', MAE_train)
 print('MAE test: ', MAE_test)
 
-#export_graphviz(regressor, out_file ='tree.dot',feature_names =['T', 'CA', 'Fx', 'Size', 'Ro', 'logRo', 'P', 'logP', 'H', 'logH', 'IsoT', 'TotalT', 'LSR'])
-export_graphviz(regressor, out_file ='treeregressor.dot',feature_names =['T', 'CA', 'Fx', 'Size', 'Ro', 'P', 'H', 'IsoT', 'TotalT', 'LSR']) 
+
+
+#export_graphviz(regressor, out_file ='treeregressor.dot',feature_names =['T', 'CA', 'Fx', 'Size', 'Ro', 'P', 'H', 'IsoT', 'TotalT', 'LSR']) 
 
 
 # In[2]:
@@ -107,7 +112,7 @@ os.environ['PATH'] = os.environ['PATH']+';'+os.environ['CONDA_PREFIX']+r"\Librar
 
 # In[3]:
 
-
+# Exporting decision tree plot 
 dotfile = StringIO()
 # columnnames = ['Total Time', 'Temperature', 'LSR', 'CA', 'Particle Size','Isothermal Time','Fx','Ro','logRo', 'P', 'logP','H', 'logH' ]
 feature_names =['T', 'CA', 'Fx', 'Size', 'Ro', 'P', 'H', 'IsoT', 'TotalT', 'LSR']
