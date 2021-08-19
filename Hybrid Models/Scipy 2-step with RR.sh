@@ -23,6 +23,6 @@ module load cuda cudnn
 source ./venv/bin/activate
 
 
-python ./Method1RR.py
+python ./Scipy 2-step with RR.py
 
 
