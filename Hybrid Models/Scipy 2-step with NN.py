@@ -12,7 +12,6 @@ Spyder Editor
 This is a temporary script file.
 """
 
-# Evaluation of Simplified Kinetic Model by Edward Wang and edited by Rana A. Barghout
 
 from sklearn import metrics
 import pandas as pd
@@ -54,12 +53,10 @@ labels_short = [factors]
 X_all = pd.concat([X_nonscaled], ignore_index=True,axis=1)
 X_all.columns = finalCols 
 
-# Looking at distribution of Yield Data
+
 Y = (df['Yield'])
 y_train = Y.tolist()
 YIELD_train = y_train
-#X_train, X_test, y_train, y_test = train_test_split(X_all, Y, test_size=0.2, random_state=1)
-
 
 Temp_train = X_all['Temp'].tolist()
 LSR_train = X_all['LSR'].tolist()
