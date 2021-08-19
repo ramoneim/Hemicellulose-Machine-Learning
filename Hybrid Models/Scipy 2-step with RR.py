@@ -46,12 +46,9 @@ labels_short = [factors]
 X_all = pd.concat([X_nonscaled], ignore_index=True,axis=1)
 X_all.columns = finalCols 
 
-# Looking at distribution of Yield Data
 Y = (df['Yield'])
 y_train = Y.tolist()
 YIELD_train = y_train
-#X_train, X_test, y_train, y_test = train_test_split(X_all, Y, test_size=0.2, random_state=1)
-
 
 Temp_train = X_all['Temp'].tolist()
 LSR_train = X_all['LSR'].tolist()
@@ -82,7 +79,7 @@ CA_set = np.zeros(len(rows)).tolist()
 Fx_set = np.zeros(len(rows)).tolist()
 IsoT_set = np.zeros(len(rows)).tolist()
 Weights_set = np.zeros(len(rows)).tolist()
-#Time_set = np.zeros(len(rowS))
+
 
 for i in range(len(Temp_set)):
     index = rows[i]
@@ -94,7 +91,7 @@ for i in range(len(Temp_set)):
 Yield_set = []
 TotalT_set = []
 
-    
+# Creating list of lists for yield and time for each experimental set    
 for i in range(len(rows)):
     index = rows[i]
     settime = []
@@ -130,14 +127,15 @@ for i in lastset:
 TotalT_set.append(settime)
 Yield_set.append(settime)
 
+# Creating a weights array that is proportional to the number of datapoints in each experiment
 for i in range(len(TotalT_set)):
     array = TotalT_set[i]
     length = len(array)
     Weights_set[i] = length
     
 YieldSol_train = np.zeros(len(CA_set))
-# YieldSol_test = np.zeros(len(X_test))
 
+# Defining all kinetic functions
 def getK (A, E, Ca, m, T):
     # A in min^(-1); E in kJ/mol, Ca in %, and T in K
     if T>450:
@@ -153,24 +151,18 @@ def getX(k1,k2, H0, t):
     denom = k1 - k2
     return num/denom
 
-    
+# Function calculating the yield and error       
 def get_error(params):
     Yield_solset = np.zeros_like(y_set)
     for j in range(len(y_set)):
         A1, E1, m1, A2, E2, m2 = params
         t = Time_set[j]
-        #print('time: ', t)
-        #print("T, H0, CA:", T, H0, CA)
-        #print("Time: ", Time_set[j])
         if CA==0:
             k1=A1*math.exp(-E1/(R*T))
             k2=A2*math.exp(-E2/(R*T))
         else:
             k1=A1*CA**(m1)*math.exp(-E1/(R*T))
             k2=A2*CA**(m2)*math.exp(-E2/(R*T))
-        #k1 = getK(A=A1, E=E1, Ca=CA, m=m1, T=T)
-        #k2 = getK(A=A2, E=E2, Ca=CA, m=m2, T=T)
-        #X_sol = getX(k1=k1, k2=k2, H0=H0, t=Time_set[j])
         X_sol = (-k1*H0*(math.exp(-k1*t)-math.exp(-k2*t)))/(k1-k2)
         Yield_solset[j] = 100*X_sol*LSR/(1000*(Fx/100))
         #print("Yield solution: ", Yield_solset)
@@ -180,6 +172,9 @@ def get_error(params):
 kinetic_params = []
 errorsab = [] 
 
+# START OF STEP 1 
+
+# Loop with optimization for each experimental set 
 for i in range(len(CA_set)):
     CA = CA_set[i]
     T = Temp_set[i]
@@ -204,17 +199,15 @@ for i in range(len(CA_set)):
 print("Kinetic Parameters: ", kinetic_params)
 print('Error: ', errors)
 
+# START OF STEP 2
+
+# Creating Y array with predicted kinetic parameters for NN
 Y = kinetic_params
 Y = np.transpose(Y)
 Y = np.transpose(Y)
-#X_all = X_all.to_numpy()
 X_new = np.zeros((287,15))
 
-# for i in range(len(Temp_set)):
-#     index = rows[i]
-#     for j in 14:
-#         X_new[index,j] = X_all[index,j] 
-
+# Creating X array and splitting into training and testing dataset
 feats = range(14)
 
 for i in range(len(Temp_set)):
@@ -237,7 +230,7 @@ for i in range(len(Temp_set)):
     
 X_train, X_test, y_train, y_test = train_test_split(X_new, Y, test_size=0.2, random_state=1)
 
-
+# Extracting data from X and redefining
 weights=X_train[:,13]
 yield_trainset = X_train[:,14]
 yield_testset = X_test[:,14]
@@ -245,7 +238,9 @@ X_train = X_train[:,:13]
 dimension=X_train.shape[1]
 X_test = X_test[:,:13]
 print(dimension)
-print('Starting Execution of NN')
+
+# Defining ridge regression parameters
+print('Starting Execution of Ridge Regression')
 cvscores = []
 trainingscores =[]
 best_lr = 0.005
@@ -254,25 +249,17 @@ dropout=0.001
 epoch=3000
 alpha = 1
 
+# Start of Ridge Regression
 model = Ridge(alpha=alpha)       
 model.fit(X_train, y_train)
-    
-# model = Sequential()
-# model.add(Dense(units=96, activation='sigmoid', input_dim=dimension))
-# model.add(Dropout(dropout))
-# model.add(Dense(units=96, activation='sigmoid'))
-# model.add(Dense(units=48, activation='sigmoid'))        
-# model.add(Dense(units=48, activation='sigmoid'))        
-# sgd = SGD(lr=best_lr)
-# model.add(Dense(units=6, activation='linear'))
-# model.compile(optimizer=sgd,loss='mean_squared_error')
+   
 
 model.fit(X_train, y_train)
-#X_test = np.array(X.iloc[test])
 y_pred_test = model.predict(X_test)
 y_pred_train = model.predict(X_train)
-#y_train = y_train.flatten()
-#y_pred = y_pred.flatten()
+
+
+# Organizing predicted kinetic parameters
 train_A1 = np.zeros(229)
 train_E1 = np.zeros(229)
 train_m1 = np.zeros(229)
@@ -328,7 +315,7 @@ for i in range(len(test_A1)):
     test_m2pred[i] = y_pred_test[i,5]
     
 
-
+# Calculating NN error in predicting kinetic parameters
 MAE_train_A1 = metrics.mean_absolute_error(train_A1, train_A1pred)
 MAE_test_A1 = metrics.mean_absolute_error(test_A1, test_A1pred)
 MAE_train_E1 = metrics.mean_absolute_error(train_E1, train_E1pred)
@@ -371,7 +358,7 @@ H0_test = np.zeros(58)
 Xf_train = np.zeros(229)
 Xf_test = np.zeros(58)
 
-
+# Calculating yield from predicted kinetic parameters
 for i in range(len(yield_train)):
     A1 = train_A1pred[i]
     A2 = train_A2pred[i]
@@ -390,11 +377,12 @@ for i in range(len(yield_train)):
     Xf_train[i] = getX(k1=k1_train[i], k2=k2_train[i], H0=H0_train[i], t=t)
     yield_train[i] = Xf_train[i]*100*LSR/(1000*(Fx/100))
 
+# MAE train calculation from yield and yield calculated from kinetic parameters        
 MAEyield_train = metrics.mean_absolute_error(yield_trainset, yield_train) 
 print('MAE train yield: ', MAEyield_train)
 
 
-
+# Calculating yield from predicted kinetic parameters
 for i in range(len(yield_test)):
     A1 = test_A1pred[i]
     A2 = test_A2pred[i]
@@ -413,6 +401,7 @@ for i in range(len(yield_test)):
     Xf_test[i] = getX(k1=k1_test[i], k2=k2_test[i], H0=H0_test[i], t=t)
     yield_test[i] = Xf_test[i]*100*LSR/(1000*(Fx/100))
 
+# MAE train calculation from yield and yield calculated from kinetic parameters        
 MAEyield_test = metrics.mean_absolute_error(yield_testset, yield_test) 
 print('MAE test yield: ', MAEyield_test)
 
