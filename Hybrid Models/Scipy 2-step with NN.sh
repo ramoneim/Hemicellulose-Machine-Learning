@@ -23,6 +23,6 @@ module load cuda cudnn
 source ./venv/bin/activate
 
 
-python ./Method1Yield.py
+python ./Scipy 2-step with NN.py
 
 
