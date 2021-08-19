@@ -64,6 +64,7 @@ for i in range(len(Temperature)):
 for i in range(len(CA)):
     CA[i] = CA[i]*98.079/2/10
 
+# Finding all compound concentrations (Ho - initial hemicellulose, Xo - initial xylose, Xf - final xylose, Hf - final hemicellulose)
 Ho = np.zeros_like(F_X) 
 Xo = np.zeros_like(F_X)
 Xf = np.zeros_like(F_X)
@@ -74,9 +75,11 @@ for i in range(len(F_X)):
     Xf[i] = (rho_w*F_X[i]/100)*Yield[i]/(100*LSR[i])
     Hf[i] = Ho[i] - Xf[i]
     
+# Finding the max time in all the dataset
 max_t = np.max(Time)
 print(max_t)
-# Reshaping all X arrays     
+
+# Reshaping all X arrays - Creating one 2D array with all features as 'X' for RNN 
 Ho = Ho.reshape((Ho.shape[0], 1))
 Hf = Hf.reshape((Hf.shape[0], 1))
 LSR = LSR.reshape((LSR.shape[0], 1))
@@ -98,24 +101,20 @@ X = np.nan_to_num(X)
 num_features = 36
 row1x = (X[1,:])
 
-train_X, test_X, train_Y, test_Y = train_test_split(X, Xf, test_size=0.2, random_state=42)    
-#train_X1, test_X1, train_Y, test_Y = train_test_split(X, Hf, test_size=0.2, random_state=1)    
+train_X, test_X, train_Y, test_Y = train_test_split(X, Xf, test_size=0.2, random_state=42)
 
-# train_X = train_X1
-# test_X = test_X1
-
-
+# Finding max time in training dataset
 max_t_train = np.max(train_X[:,5])
 print(max_t_train)
 
+# Finding max time in testing dataset
 max_t_test = int(np.max(test_X[:,5]))
 print(max_t_test)
 
 train_Xnew = []
 test_Xnew = []
 
-
-
+# Function defining a new time scale - every time point divided by 10 to allow for a total of 10 time steps in the series
 def new_time(t):
     tenmin=0
     if tenmin==0:
@@ -125,6 +124,7 @@ def new_time(t):
     return tenmin
     
 
+# Repeating the features t=time times and adding zeros to the rest of the row's data
 for i in range(len(train_X)):
     zeros_array = np.zeros(num_features)
     if train_X[i,5]<max_t:
@@ -133,19 +133,6 @@ for i in range(len(train_X)):
         rowi_data = np.zeros(num_features)
         for j in range(num_features):
             rowi_data[j] = train_X[i,j]
-        # rowi_data[0] = train_X[i,0]
-        # rowi_data[1] = train_X[i,1]
-        # rowi_data[2] = train_X[i,2]
-        # rowi_data[3] = train_X[i,3]
-        # rowi_data[4] = train_X[i,4]
-        # rowi_data[5] = train_X[i,5]
-        # rowi_data[6] = train_X[i,6]
-        # rowi_data[7] = train_X[i,7]
-        # rowi_data[8] = train_X[i,8]
-        # rowi_data[9] = train_X[i,9]
-        # rowi_data[10] = train_X[i,10]
-        # rowi_data[11] = train_X[i,11]
-        # rowi_data[12] = train_X[i,12]
         repeatedt_times = np.tile(rowi_data, (newt,1))
         repeatedt_times = np.transpose(repeatedt_times)
         numzerorepeat = int(max_t/10) - newt 
@@ -161,22 +148,7 @@ for i in range(len(train_X)):
         rowi_data = np.zeros(num_features)
         for j in range(num_features):
             rowi_data[j] = train_X[i,j]
-        # rowi_data[0] = train_X[i,0]
-        # rowi_data[1] = train_X[i,1]
-        # rowi_data[2] = train_X[i,2]
-        # rowi_data[3] = train_X[i,3]
-        # rowi_data[4] = train_X[i,4]
-        # rowi_data[5] = train_X[i,5]
-        # rowi_data[6] = train_X[i,6]
-        # rowi_data[7] = train_X[i,7]
-        # rowi_data[8] = train_X[i,8]
-        # rowi_data[9] = train_X[i,9]
-        # rowi_data[10] = train_X[i,10]
-        # rowi_data[11] = train_X[i,11]
-        # rowi_data[12] = train_X[i,12]
         repeatedt_times = np.tile(rowi_data, (int(max_t/10),1))
-        #repeatedt_times = scaler.fit_transform(repeatedt_times) 
-        #repeatedt_times = np.transpose(repeatedt_times)
         train_Xnew.append(repeatedt_times)
 
 
@@ -184,8 +156,8 @@ train_Xnew = np.transpose(train_Xnew)
 train_Xnewnew = np.dstack(train_Xnew)
 X_train =np.dstack( np.transpose(np.transpose(np.transpose(np.transpose(np.transpose(train_Xnewnew))))))
 Y_train = train_Y.reshape(train_Y.shape[0], 1)
-#print(X_train)
 
+# Repeating the features t=time times and adding zeros to the rest of the row's data
 for i in range(len(test_X)):
     zeros_array = np.zeros(num_features)
     if test_X[i,5]<max_t:
@@ -194,19 +166,6 @@ for i in range(len(test_X)):
         rowi_data = np.zeros(num_features)
         for j in range(num_features):
             rowi_data[j] = test_X[i,j]
-        # rowi_data[0] = test_X[i,0]
-        # rowi_data[1] = test_X[i,1]
-        # rowi_data[2] = test_X[i,2]
-        # rowi_data[3] = test_X[i,3]
-        # rowi_data[4] = test_X[i,4]
-        # rowi_data[5] = test_X[i,5]
-        # rowi_data[6] = test_X[i,6]
-        # rowi_data[7] = test_X[i,7]
-        # rowi_data[8] = test_X[i,8]
-        # rowi_data[9] = test_X[i,9]
-        # rowi_data[10] = test_X[i,10]
-        # rowi_data[11] = test_X[i,11]
-        # rowi_data[12] = test_X[i,12]
         repeatedt_times = np.tile(rowi_data, (newt,1))
         repeatedt_times = np.transpose(repeatedt_times)
         numzerorepeat = int(max_t/10) - newt 
@@ -221,44 +180,23 @@ for i in range(len(test_X)):
         rowi_data = np.zeros(num_features)
         for j in range(num_features):
             rowi_data[j] = test_X[i,j]
-        # rowi_data[0] = test_X[i,0]
-        # rowi_data[1] = test_X[i,1]
-        # rowi_data[2] = test_X[i,2]
-        # rowi_data[3] = test_X[i,3]
-        # rowi_data[4] = test_X[i,4]
-        # rowi_data[5] = test_X[i,5]
-        # rowi_data[6] = test_X[i,6]
-        # rowi_data[7] = test_X[i,7]
-        # rowi_data[8] = test_X[i,8]
-        # rowi_data[9] = test_X[i,9]
-        # rowi_data[10] = test_X[i,10]
-        # rowi_data[11] = test_X[i,11]
-        # rowi_data[12] = test_X[i,12]
         repeatedt_times = np.tile(rowi_data, (int(max_t/10),1))
-        #repeatedt_times = scaler.fit_transform(repeatedt_times)
-        #repeatedt_times = np.transpose(repeatedt_times)
         test_Xnew.append(repeatedt_times)
 
 
-
+# Reshaping X arrays
 train_Xnew = np.transpose(train_Xnew)
 train_Xnewnew = np.dstack(train_Xnew)
-#X_train = np.dstack( np.transpose(np.transpose(np.transpose(np.transpose(np.transpose(train_Xnewnew))))))
-#train_Xnew= scaler.fit_transform(train_Xnew) 
 X_train = train_Xnew
 Y_train = train_Y.reshape(train_Y.shape[0], 1)
-#Y_train = scaler.fit_transform(Y_train)
-#print(X_train)
 
 test_Xnew = np.transpose(test_Xnew)
 test_Xnewnew = np.dstack(test_Xnew)
 X_test =np.dstack( np.transpose(np.transpose(np.transpose(np.transpose(np.transpose(test_Xnewnew))))))
-#X_test = scaler.fit_transform(X_test)
 Y_test = test_Y.reshape(test_Y.shape[0], 1)
-#Y_test = scaler.fit_transform(Y_test)
 dropout= 0.2
 
-
+# Scaling X train and test using a robust scaler
 scalers = {}
 for i in range(X_train.shape[1]):
     scalers[i] = RobustScaler()
@@ -267,16 +205,14 @@ for i in range(X_train.shape[1]):
 for i in range(X_test.shape[1]):
     X_test[:,i,:] = scalers[i].transform(X_test[:,i,:])
 
-#regularizer = [L1L2(l1=0.0, l2=0.0), L1L2(l1=0.01, l2=0.0), L1L2(l1=0.0, 0.01), L1L2(l1=0.01, l2=0.01)]
+# Testing the RNN with 3 different regularilization sets for activity, bias, and kernel regularization
 regularizer = [L1L2(l1=0.0, l2=0.0), L1L2(l1=0.0001, l2=0.0), L1L2(l1=0.0, l2=0.0001), L1L2(l1=0.0001, l2=0.0001)]
 for reg in regularizer:
   model = Sequential()
-  model.add(Masking(mask_value=0, input_shape=(int(max_t/10), num_features)))
+  model.add(Masking(mask_value=0, input_shape=(int(max_t/10), num_features))) # This tells RNN to ignore any 0 values in the data
   model.add(LSTM(50, use_bias=True, return_sequences=False, activity_regularizer=reg, bias_regularizer=reg, kernel_regularizer=reg))
-# model.add(LSTM(30, return_sequences=False))
   model.add(Dropout(0.01))
   model.add(Dense(units=64, activation='sigmoid'))
-# model.add(Dropout(0.001))
   model.add(Dense(units=48, activation='sigmoid'))        
   model.add(Dense(units=48, activation='sigmoid'))
   model.add(Dense(1, activation='linear'))
@@ -288,6 +224,7 @@ for reg in regularizer:
 
   history = model.fit(X_train, Y_train, epochs=1000, batch_size=12, validation_data=(X_test, Y_test), verbose=0)
   
+  # Check for training and testing error in plot
   #pyplot.plot(history.history['loss'], label = 'train')
   #pyplot.plot(history.history['val_loss'], label='test')
   #pyplot.legend()
@@ -300,15 +237,17 @@ for reg in regularizer:
   Yieldtrain = np.zeros_like(yhat)
   Fxtrain = np.zeros_like(yhat)
   Xftrain = np.zeros_like(yhat)
+  # Recalculating Yield
   for i in range(len(yhat)):
       Fxtrain[i] = train_X[i,3]*(100*train_X[i,1])/rho_w
-    #Xftrain[i] = train_X[i,3] - yhat[i]
       Yieldtrainpred[i] = yhat[i]*(100*train_X[i, 1])/(rho_w*Fxtrain[i]/100)
       Yieldtrain[i] = train_Y[i]*(100*train_X[i, 1])/(rho_w*Fxtrain[i]/100)
 
+  # Calculating MAE train      
   MAE_trainyield = metrics.mean_absolute_error(Yieldtrain, Yieldtrainpred)
   print('MAE train for yield: ', MAE_trainyield)
 
+  # Testing the model for the test dataset  
   ypredtest = model.predict(X_test)
   MAE_test = metrics.mean_absolute_error(Y_test, ypredtest)
   print('MAE test for xylose conc.: ', MAE_test)
@@ -322,5 +261,6 @@ for reg in regularizer:
       Yieldtestpred[i] = ypredtest[i]*(100*test_X[i, 1])/(rho_w*Fxtest[i]/100)
       Yieldtest[i] = test_Y[i]*(100*test_X[i, 1])/(rho_w*Fxtest[i]/100)
 
+  # Calculating MAE test  
   MAE_testyield = metrics.mean_absolute_error(Yieldtest, Yieldtestpred)
   print('MAE test for yield: ', MAE_testyield)
